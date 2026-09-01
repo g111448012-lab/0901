@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>教師劇本殺遊戲管理系統</title>
-  <meta name="description" content="《無聲的社會》課堂劇本殺教師控場、計時、玩家與結算管理工具">
+  <meta name="description" content="《風平浪靜下的暗潮湧動》課堂劇本殺教師控場、計時、玩家與結算管理工具">
   <style>
     :root {
       --paper: #f2ede3;
@@ -58,6 +58,15 @@
       border: 1px solid var(--line); background: rgba(251,247,239,.95);
       box-shadow: inset 0 1px rgba(255,255,255,.7), var(--shadow);
     }
+    .setup-card { margin-bottom: 14px; padding: 20px 22px; }
+    .setup-grid { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 20px; }
+    .setup-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+    .field-label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .class-input {
+      width: 108px; min-height: 42px; border: 1px solid var(--line); border-radius: 5px;
+      background: #fffaf1; padding: 8px 10px; color: var(--ink); font-weight: 800;
+    }
+    .setup-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
     .top-grid { display: grid; grid-template-columns: 1fr 320px; gap: 12px; margin-bottom: 20px; }
     .phase-card { display: flex; justify-content: space-between; align-items: end; gap: 24px; padding: 24px; }
     .badges, .inline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -136,7 +145,17 @@
     th { background: #eee6d9; color: #665b50; text-align: left; }
     th, td { border-bottom: 1px solid var(--line-soft); padding: 12px 14px; vertical-align: middle; }
     tbody tr:hover { background: #f5eee3; }
+    tbody tr.inactive {
+      background: #c9c0b4 !important;
+      color: #403a35;
+      box-shadow: inset 5px 0 #62584f;
+    }
+    tbody tr.inactive .role,
+    tbody tr.inactive .stock { color: #5f574f; }
+    tbody tr.inactive .name-input { color: #342f2b; }
     .name-input { width: 100%; min-width: 145px; border: 0; background: transparent; padding: 4px 0; color: var(--ink); font-weight: 700; }
+    .member-inputs { display: grid; gap: 4px; margin-top: 7px; }
+    .member-inputs .name-input { border-bottom: 1px dashed #b6aa9a; font-size: 12px; font-weight: 600; }
     .role { margin-top: 2px; color: #8b8175; font-size: 11px; }
     .coin-controls { display: flex; align-items: center; gap: 7px; }
     .mini {
@@ -172,6 +191,7 @@
     .win-chip { display: inline-block; margin-left: 8px; border-radius: 999px; background: var(--green-soft); padding: 3px 8px; color: var(--green); font-size: 10px; vertical-align: middle; }
     @media (max-width: 980px) {
       .top-grid, .control-grid { grid-template-columns: 1fr; }
+      .setup-grid { grid-template-columns: 1fr; }
       .phase-card { align-items: stretch; }
       .phase-card .button.primary { align-self: end; }
     }
@@ -192,13 +212,30 @@
     <div class="header-inner">
       <div class="stamp" aria-hidden="true">教師密件</div>
       <div>
-        <p class="kicker">《無聲的社會》課堂控場系統</p>
+        <p class="kicker">《風平浪靜下的暗潮湧動》</p>
         <h1>教師遊戲管理台</h1>
       </div>
     </div>
   </header>
 
   <main class="shell">
+    <section class="card setup-card">
+      <div class="setup-grid">
+        <div>
+          <p class="eyebrow">開局人數設定</p>
+          <h3>依本日出席人數建立角色名冊</h3>
+          <p class="setup-note">家長與中立學生維持一對一；多出的學生優先加入領袖、警察、國大代表與讀書會共同決策。</p>
+        </div>
+        <div class="setup-controls">
+          <label class="field-label">實際出席人數
+            <input class="class-input" id="classSizeInput" type="number" min="8" max="40" value="30" inputmode="numeric">
+          </label>
+          <button class="button primary" id="applyRosterButton" type="button">套用人數並產生角色</button>
+        </div>
+      </div>
+      <p class="setup-note" id="sizeGuidance" aria-live="polite"></p>
+    </section>
+
     <section class="top-grid">
       <div class="card phase-card">
         <div style="flex:1">
@@ -251,7 +288,7 @@
         </section>
         <aside class="side">
           <section class="stats">
-            <article class="card stat"><span class="stat-icon">♟</span><p class="stat-label">場上玩家</p><p class="stat-value" id="playerCount">18 人</p></article>
+            <article class="card stat"><span class="stat-icon">♟</span><p class="stat-label">角色席位／實際人數</p><p class="stat-value" id="playerCount">21席／30人</p></article>
             <article class="card stat"><span class="stat-icon">⚠</span><p class="stat-label">審訊室</p><p class="stat-value" id="detainedCount">0 人</p></article>
             <article class="card stat"><span class="stat-icon">▣</span><p class="stat-label">檢舉信</p><p class="stat-value" id="reportCount">0 封</p></article>
             <article class="card stat"><span class="stat-icon">●</span><p class="stat-label">流通金幣</p><p class="stat-value" id="coinTotal">0 枚</p></article>
@@ -274,12 +311,12 @@
     <section class="panel" id="panel-players">
       <section class="card table-card">
         <div class="section-head">
-          <div><p class="eyebrow">全員名冊</p><h3>角色、金幣與狀態</h3></div>
-          <p class="muted small" style="max-width:470px;margin:0">可修改角色名稱，並切換禁書小卡、赤化標記與線民身分；所有結果會即時重算。</p>
+          <div><p class="eyebrow">全員名冊</p><h3>角色席位、共同玩家與狀態</h3></div>
+          <p class="muted small" style="max-width:500px;margin:0">可修改每位參與者姓名；雙人角色共用金幣、物品與一次行動。設為「失去行動資格」時整列會變深。</p>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>玩家／角色</th><th>陣營</th><th>金幣</th><th>狀態</th><th>持有物</th></tr></thead>
+            <thead><tr><th>角色席位／參與學生</th><th>陣營</th><th>金幣</th><th>狀態</th><th>持有物</th></tr></thead>
             <tbody id="playerRows"></tbody>
           </table>
         </div>
@@ -303,7 +340,7 @@
   <script>
     (() => {
       "use strict";
-      const STORAGE_KEY = "silent-society-standalone-v1";
+      const STORAGE_KEY = "silent-society-standalone-v2";
       const statuses = ["場內", "審訊室", "釋放", "失去行動資格"];
       const trackedItems = ["禁書小卡", "赤化標記", "線民"];
       const nightTasks = [
@@ -313,29 +350,60 @@
         "處理審訊室、保釋與釋放結果",
         "發放下一週期固定收入並更新紀錄"
       ];
-      const initialPlayers = [
-        [1,"蔣中正","最高領袖","政府",30,10,["檢舉信"]],
-        [2,"國大代表 A","國大代表","政府",0,0,["檢舉信"]],
-        [3,"國大代表 B","國大代表","政府",0,0,["檢舉信"]],
-        [4,"警察 A","警察","政府",0,0,["檢舉信"]],
-        [5,"警察 B","警察","政府",0,0,["檢舉信"]],
-        [6,"警察 C","警察","政府",0,0,["檢舉信"]],
-        [7,"讀書會領導者 A","讀書會領導者","讀書會",5,2,["禁書小卡","檢舉信"]],
-        [8,"讀書會領導者 B","讀書會領導者","讀書會",5,2,["禁書小卡","檢舉信"]],
-        [9,"學生 A","學生","中立",0,0,["檢舉信"]],
-        [10,"學生 B","學生","中立",0,0,["檢舉信"]],
-        [11,"學生 C","學生","中立",0,0,["檢舉信"]],
-        [12,"學生 D","學生","中立",0,0,["檢舉信"]],
-        [13,"學生 E","學生","中立",0,0,["檢舉信"]],
-        [14,"家長 A","家長","社會民眾",15,5,["檢舉信"]],
-        [15,"家長 B","家長","社會民眾",15,5,["檢舉信"]],
-        [16,"家長 C","家長","社會民眾",15,5,["檢舉信"]],
-        [17,"地下黨員 A","地下共產黨員","共產陣營",5,2,["赤化標記 ×3","檢舉信"]],
-        [18,"地下黨員 B","地下共產黨員","共產陣營",5,2,["赤化標記 ×3","檢舉信"]]
-      ].map(([id,name,role,faction,coins,income,items]) => ({id,name,role,faction,coins,income,status:"場內",items}));
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+      const letter = index => String.fromCharCode(65 + index);
+
+      function rosterPlan(classSize) {
+        const size = clamp(Math.round(Number(classSize) || 30), 8, 40);
+        let families = Math.max(1, Math.round(size / 6));
+        const police = clamp(Math.round(size / 10), 1, 4);
+        const delegates = clamp(Math.round(size / 15), 1, 3);
+        const bookClub = clamp(Math.round(size / 10), 1, 4);
+        const underground = clamp(Math.round(size / 15), 1, 3);
+        let seatCount = 1 + police + delegates + bookClub + underground + families * 2;
+        while (seatCount > size && families > 1) {
+          families -= 1;
+          seatCount -= 2;
+        }
+        return {
+          size, families, police, delegates, bookClub, underground,
+          seatCount, sharedSeats: size - seatCount
+        };
+      }
+
+      function generateRoster(classSize) {
+        const plan = rosterPlan(classSize);
+        const seats = [];
+        let id = 1;
+        const addSeat = (seatLabel, role, faction, coins, income, items, family = "") => {
+          const seat = { id:id++, seatLabel, role, faction, coins, income, status:"場內", items:[...items], family, members:[] };
+          seats.push(seat);
+          return seat;
+        };
+        const governmentBudgetRoles = plan.police + plan.delegates;
+        const leader = addSeat("最高領袖", "最高領袖", "政府", governmentBudgetRoles * 5 + 5, governmentBudgetRoles * 2, ["檢舉信"]);
+        const policeSeats = Array.from({length:plan.police}, (_,i) => addSeat("警察 " + letter(i), "警察", "政府", 0, 0, ["檢舉信"]));
+        const delegateSeats = Array.from({length:plan.delegates}, (_,i) => addSeat("國大代表 " + letter(i), "國大代表", "政府", 0, 0, ["檢舉信"]));
+        const bookSeats = Array.from({length:plan.bookClub}, (_,i) => addSeat("讀書會領導者 " + letter(i), "讀書會領導者", "讀書會", 5, 2, ["禁書小卡","檢舉信"]));
+        const undergroundSeats = Array.from({length:plan.underground}, (_,i) => addSeat("地下黨員 " + letter(i), "地下共產黨員", "共產陣營", 5, 2, ["赤化標記 ×3","檢舉信"]));
+        for (let i = 0; i < plan.families; i += 1) {
+          const family = "家庭 " + letter(i);
+          addSeat("中立學生 " + letter(i), "學生", "中立", 0, 0, ["檢舉信"], family);
+          addSeat("家長 " + letter(i), "家長", "社會民眾", 15, 5, ["檢舉信"], family);
+        }
+        seats.forEach(seat => seat.members.push(""));
+        const priority = [leader, ...policeSeats, ...delegateSeats, ...bookSeats, ...undergroundSeats];
+        for (let i = 0; i < plan.sharedSeats; i += 1) {
+          if (priority[i]) priority[i].members.push("");
+        }
+        let participant = 1;
+        seats.forEach(seat => seat.members = seat.members.map(() => "學生" + participant++));
+        return { plan, seats };
+      }
 
       const defaultState = () => ({
-        players: JSON.parse(JSON.stringify(initialPlayers)),
+        classSize: 30,
+        players: generateRoster(30).seats,
         cycle: 1, phase: "白天", seconds: 1200, running: false,
         protests: 0, reports: 0, tasks: nightTasks.map(() => false)
       });
@@ -360,23 +428,47 @@
       function currentDuration() { return state.phase === "白天" ? 1200 : 600; }
       function isInactive(player) { return ["審訊室","失去行動資格"].includes(player.status); }
       function playerById(id) { return state.players.find(player => player.id === Number(id)); }
+      function actualParticipantCount() { return state.players.reduce((sum, player) => sum + player.members.length, 0); }
 
       function calculateResults() {
         const threatsControlled = state.players.filter(p => ["讀書會領導者","地下共產黨員"].includes(p.role) && isInactive(p)).length;
+        const totalThreatSeats = state.players.filter(p => ["讀書會領導者","地下共產黨員"].includes(p.role)).length;
         const activeLeaders = state.players.filter(p => p.role === "讀書會領導者" && !isInactive(p)).length;
         const enlightenedStudents = state.players.filter(p => p.role === "學生" && p.items.includes("禁書小卡") && !p.items.includes("赤化標記")).length;
         const radicalizedPlayers = state.players.filter(p => p.faction === "共產陣營" || p.items.includes("赤化標記")).length;
         const activeUnderground = state.players.filter(p => p.role === "地下共產黨員" && !isInactive(p)).length;
+        const neutralStudents = state.players.filter(p => p.role === "學生").length;
+        const governmentTarget = Math.max(1, Math.ceil(totalThreatSeats / 2));
+        const bookClubTarget = Math.max(1, Math.ceil(neutralStudents * 0.4));
+        const communistTarget = Math.max(3, Math.ceil(state.players.length * 0.28));
         return {
           threatsControlled, activeLeaders, enlightenedStudents, radicalizedPlayers, activeUnderground,
-          governmentWon: threatsControlled >= 3 && state.protests < 2,
-          bookClubWon: enlightenedStudents >= 2 && activeLeaders > 0,
-          communistWon: radicalizedPlayers >= 5 && activeUnderground > 0
+          governmentTarget, bookClubTarget, communistTarget,
+          governmentWon: threatsControlled >= governmentTarget && state.protests < 2,
+          bookClubWon: enlightenedStudents >= bookClubTarget && activeLeaders > 0,
+          communistWon: radicalizedPlayers >= communistTarget && activeUnderground > 0
         };
       }
 
-      function render() {
+      function renderRosterPreview(classSize) {
+        const plan = rosterPlan(classSize);
+        document.getElementById("sizeGuidance").textContent =
+          plan.size < 12 ? "建議遊玩人數為12～36人；目前少於建議範圍，將使用精簡模式，建議縮短為兩個週期。" :
+          plan.size > 36 ? "建議遊玩人數為12～36人；目前超過建議範圍，建議評估分成兩局以維持參與感。" :
+          "建議遊玩人數為12～36人；目前人數落在建議範圍內。";
+      }
+
+      function renderTimer() {
         const duration = currentDuration();
+        const timerText = document.getElementById("timerText");
+        timerText.textContent = formatTime(state.seconds);
+        timerText.classList.toggle("urgent", state.seconds <= 60);
+        document.getElementById("timerBar").style.width = Math.max(0, Math.min(100, state.seconds / duration * 100)) + "%";
+        document.getElementById("timerToggle").textContent = state.running ? "Ⅱ" : "▶";
+        document.getElementById("timerToggle").setAttribute("aria-label", state.running ? "暫停計時" : "開始計時");
+      }
+
+      function render() {
         const progress = (((state.cycle - 1) * 2 + (state.phase === "黑夜" ? 1 : 0)) / 6) * 100;
         document.getElementById("cycleBadge").textContent = `週期 ${state.cycle}／3`;
         document.getElementById("flowCycle").textContent = `第 ${state.cycle} 週期`;
@@ -385,12 +477,7 @@
         document.getElementById("globalPercent").textContent = Math.round(progress) + "%";
         document.getElementById("globalBar").style.width = progress + "%";
         document.getElementById("advanceButton").innerHTML = state.cycle === 3 && state.phase === "黑夜" ? "查看最終結算 <span>›</span>" : "推進下一階段 <span>›</span>";
-        const timerText = document.getElementById("timerText");
-        timerText.textContent = formatTime(state.seconds);
-        timerText.classList.toggle("urgent", state.seconds <= 60);
-        document.getElementById("timerBar").style.width = Math.max(0, Math.min(100, state.seconds / duration * 100)) + "%";
-        document.getElementById("timerToggle").textContent = state.running ? "Ⅱ" : "▶";
-        document.getElementById("timerToggle").setAttribute("aria-label", state.running ? "暫停計時" : "開始計時");
+        renderTimer();
         renderFlow();
         renderStats();
         renderPlayers();
@@ -412,7 +499,11 @@
             `<article class="day-item"><span class="day-num">0${index+1}</span><h4>${item[0]}</h4><p>${item[1]}</p></article>`
           ).join("") + "</div>";
         } else {
-          root.innerHTML = '<div class="night-list">' + nightTasks.map((task,index) =>
+          const arrestLimit = Math.max(1, Math.round(state.players.length * 0.1));
+          const currentTasks = nightTasks.map((task,index) =>
+            index === 1 ? `警察查看檢舉內容，確認本回合最多 ${arrestLimit} 名目標` : task
+          );
+          root.innerHTML = '<div class="night-list">' + currentTasks.map((task,index) =>
             `<label class="night-task ${state.tasks[index] ? "done" : ""}"><input type="checkbox" data-task="${index}" ${state.tasks[index] ? "checked" : ""}><span>${task}</span></label>`
           ).join("") + "</div>";
           root.querySelectorAll("[data-task]").forEach(input => input.addEventListener("change", event => {
@@ -423,8 +514,8 @@
       }
 
       function renderStats() {
-        document.getElementById("playerCount").textContent = state.players.length + " 人";
-        document.getElementById("detainedCount").textContent = state.players.filter(p => p.status === "審訊室").length + " 人";
+        document.getElementById("playerCount").textContent = state.players.length + "席／" + actualParticipantCount() + "人";
+        document.getElementById("detainedCount").textContent = state.players.filter(p => p.status === "審訊室").length + " 席";
         document.getElementById("reportCount").textContent = state.reports + " 封";
         document.getElementById("coinTotal").textContent = state.players.reduce((sum,p) => sum + p.coins,0) + " 枚";
         const protest = document.getElementById("protestCount");
@@ -435,16 +526,22 @@
       function renderPlayers() {
         document.getElementById("playerRows").innerHTML = state.players.map(player => {
           const stock = player.items.filter(item => !trackedItems.includes(item)).map(escapeHtml).join("、") || "—";
-          return `<tr>
-            <td><input class="name-input" value="${escapeHtml(player.name)}" aria-label="${escapeHtml(player.role)}名稱" data-name="${player.id}"><div class="role">${escapeHtml(player.role)}</div></td>
+          const members = player.members.map((member,index) =>
+            `<input class="name-input" value="${escapeHtml(member)}" aria-label="${escapeHtml(player.seatLabel)}第${index+1}位學生姓名" data-member-player="${player.id}" data-member-index="${index}">`
+          ).join("");
+          const familyLabel = player.family ? `・${escapeHtml(player.family)}` : "";
+          return `<tr class="${player.status === "失去行動資格" ? "inactive" : ""}">
+            <td><strong>${escapeHtml(player.seatLabel)}</strong><div class="role">${player.members.length === 2 ? "2人共同決策" : "單人角色"}${familyLabel}</div><div class="member-inputs">${members}</div></td>
             <td><span class="badge">${escapeHtml(player.faction)}</span></td>
-            <td><div class="coin-controls"><button class="mini" data-coin="${player.id}" data-delta="-1" aria-label="${escapeHtml(player.name)}減少一枚金幣">−</button><span class="coin-value">${player.coins}</span><button class="mini" data-coin="${player.id}" data-delta="1" aria-label="${escapeHtml(player.name)}增加一枚金幣">＋</button></div></td>
+            <td><div class="coin-controls"><button class="mini" data-coin="${player.id}" data-delta="-1" aria-label="${escapeHtml(player.seatLabel)}減少一枚金幣">−</button><span class="coin-value">${player.coins}</span><button class="mini" data-coin="${player.id}" data-delta="1" aria-label="${escapeHtml(player.seatLabel)}增加一枚金幣">＋</button></div></td>
             <td><div class="status-row">${statuses.map(status => `<button class="pill ${player.status === status ? "active" : ""}" data-status="${status}" data-player="${player.id}">${status}</button>`).join("")}</div></td>
             <td><div class="stock">${stock}</div><div class="item-row">${trackedItems.map(item => `<button class="item-toggle ${player.items.includes(item) ? "active" : ""}" data-item="${item}" data-player="${player.id}">${player.items.includes(item) ? "✓" : "＋"} ${item}</button>`).join("")}</div></td>
           </tr>`;
         }).join("");
-        document.querySelectorAll("[data-name]").forEach(input => input.addEventListener("change", event => {
-          playerById(event.target.dataset.name).name = event.target.value.trim() || playerById(event.target.dataset.name).role;
+        document.querySelectorAll("[data-member-player]").forEach(input => input.addEventListener("change", event => {
+          const player = playerById(event.target.dataset.memberPlayer);
+          const memberIndex = Number(event.target.dataset.memberIndex);
+          player.members[memberIndex] = event.target.value.trim() || `學生${memberIndex + 1}`;
           render();
         }));
         document.querySelectorAll("[data-coin]").forEach(button => button.addEventListener("click", event => {
@@ -477,18 +574,18 @@
         const outcomes = [
           {
             won: result.governmentWon, title: "政府陣營",
-            detail: "審訊室內至少 3 名讀書會領導者或地下黨員，且抗議少於 2 次。",
-            current: `目前符合目標 ${result.threatsControlled} 人／抗議 ${state.protests} 次`
+            detail: `控制至少一半的讀書會領導者與地下黨員席位（本局需 ${result.governmentTarget} 席），且抗議少於 2 次。`,
+            current: `目前符合目標 ${result.threatsControlled} 席／抗議 ${state.protests} 次`
           },
           {
             won: result.bookClubWon, title: "讀書會陣營",
-            detail: "至少 2 名學生持有禁書小卡且未持有赤化標記；至少 1 名領導者仍具行動資格。",
-            current: `符合條件學生 ${result.enlightenedStudents} 人／可行動領導者 ${result.activeLeaders} 人`
+            detail: `至少40%的中立學生持有禁書小卡且未持有赤化標記（本局需 ${result.bookClubTarget} 席）；至少1名領導者仍具行動資格。`,
+            current: `符合條件學生 ${result.enlightenedStudents} 席／可行動領導者 ${result.activeLeaders} 席`
           },
           {
             won: result.communistWon, title: "共產陣營",
-            detail: "持有赤化標記者與地下黨員合計達 5 人；至少 1 名地下黨員仍具行動資格。",
-            current: `陣營人數 ${result.radicalizedPlayers} 人／可行動地下黨員 ${result.activeUnderground} 人`
+            detail: `持有赤化標記者與地下黨員合計達全體角色席位約28%（本局需 ${result.communistTarget} 席）；至少1名地下黨員仍具行動資格。`,
+            current: `陣營席位 ${result.radicalizedPlayers} 席／可行動地下黨員 ${result.activeUnderground} 席`
           }
         ];
         document.getElementById("outcomes").innerHTML = outcomes.map(item =>
@@ -505,6 +602,25 @@
         document.querySelectorAll(".panel").forEach(panel => panel.classList.toggle("active", panel.id === "panel-" + name));
       }
       document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
+      const classSizeInput = document.getElementById("classSizeInput");
+      classSizeInput.value = state.classSize || actualParticipantCount();
+      renderRosterPreview(classSizeInput.value);
+      classSizeInput.addEventListener("input", event => renderRosterPreview(event.target.value));
+      document.getElementById("applyRosterButton").addEventListener("click", () => {
+        const size = clamp(Math.round(Number(classSizeInput.value) || 30), 8, 40);
+        classSizeInput.value = size;
+        if (!window.confirm(`將依 ${size} 名學生重新建立角色名冊，現有玩家資料與遊戲進度會重設。是否繼續？`)) return;
+        const generated = generateRoster(size);
+        state = {
+          ...defaultState(),
+          classSize: size,
+          players: generated.seats
+        };
+        syncTimer();
+        renderRosterPreview(size);
+        render();
+        showTab("players");
+      });
       document.getElementById("advanceButton").addEventListener("click", () => {
         if (state.cycle === 3 && state.phase === "黑夜") { showTab("closing"); return; }
         state.running = false;
@@ -533,7 +649,8 @@
         if (state.running) timerId = setInterval(() => {
           if (state.seconds > 0) state.seconds -= 1;
           if (state.seconds <= 0) { state.running = false; syncTimer(); }
-          render();
+          renderTimer();
+          saveState();
         }, 1000);
       }
       syncTimer();
