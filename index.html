@@ -53,13 +53,18 @@
     }
     .kicker { margin: 0 0 3px; color: #cbbfae; font-size: 12px; letter-spacing: .2em; }
     h1 { margin: 0; font-size: clamp(19px, 3vw, 25px); }
+    .manual-open {
+      margin-left: auto; border: 1px solid #766a60; border-radius: 5px;
+      background: #f0e7da; padding: 9px 14px; color: #2a2529; font-weight: 750;
+    }
+    .manual-open:hover { background: #fff8ea; }
     .shell { padding: 26px 0 40px; }
     .card {
       border: 1px solid var(--line); background: rgba(251,247,239,.95);
       box-shadow: inset 0 1px rgba(255,255,255,.7), var(--shadow);
     }
     .setup-card { margin-bottom: 14px; padding: 20px 22px; }
-    .setup-grid { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 20px; }
+    .setup-grid { display: flex; align-items: end; gap: 20px; }
     .setup-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
     .field-label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
     .class-input {
@@ -77,6 +82,12 @@
     }
     .badge.red { border-color: transparent; background: var(--red); color: #fff8ea; font-weight: 700; }
     .badge.win { border-color: #96cfaf; background: var(--green-soft); color: var(--green); font-weight: 750; }
+    .faction-badge { font-weight: 750; }
+    .faction-badge[data-faction="政府"] { border-color: #9eb9cf; background: #dceaf5; color: #315b7a; }
+    .faction-badge[data-faction="讀書會"] { border-color: #bea6c9; background: #eee2f2; color: #704d80; }
+    .faction-badge[data-faction="中立"] { border-color: #b8bbc1; background: #e8e9ec; color: #565c66; }
+    .faction-badge[data-faction="社會民眾"] { border-color: #d7bc7e; background: #f6e7c2; color: #79551f; }
+    .faction-badge[data-faction="共產陣營"] { border-color: #d39b92; background: #f5dcd7; color: #913c34; }
     .phase-title { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
     .phase-icon { font-size: 28px; }
     .eyebrow { margin: 0 0 3px; color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .18em; }
@@ -171,7 +182,6 @@
     .pill:hover { border-color: var(--line); }
     .pill.active[data-status="場內"] { border-color: #a9d8bd; background: #edf8f1; color: #17633f; }
     .pill.active[data-status="審訊室"] { border-color: #dfc274; background: #fff8df; color: #745a0d; }
-    .pill.active[data-status="釋放"] { border-color: #a9c8df; background: #eef7fc; color: #245d80; }
     .pill.active[data-status="失去行動資格"] { border-color: #d0ccc7; background: #f1efec; color: #665f58; }
     .stock { margin-bottom: 7px; color: #665b50; font-size: 11px; line-height: 1.5; }
     .item-toggle {
@@ -189,9 +199,38 @@
     .outcome.won { border-left-color: #2d9d68; color: var(--green); }
     .outcome.won p, .outcome.won .current { color: var(--green); }
     .win-chip { display: inline-block; margin-left: 8px; border-radius: 999px; background: var(--green-soft); padding: 3px 8px; color: var(--green); font-size: 10px; vertical-align: middle; }
+    .manual-dialog {
+      width: min(920px, calc(100% - 28px)); max-height: min(86vh, 820px); overflow: hidden;
+      border: 1px solid #b8aa99; border-radius: 8px; background: #f8f2e8; padding: 0;
+      color: var(--ink); box-shadow: 0 24px 70px rgba(24,20,22,.3);
+    }
+    .manual-dialog::backdrop { background: rgba(25,21,24,.72); }
+    .manual-dialog-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      border-bottom: 1px solid var(--line); background: #29252a; padding: 18px 22px; color: #fff8ea;
+    }
+    .manual-dialog-head p { margin: 0 0 3px; color: #d9ccbd; font-size: 11px; letter-spacing: .12em; }
+    .manual-dialog-head h2 { font-size: 22px; }
+    .manual-close { border: 1px solid #7b706a; border-radius: 5px; background: #f5ecdf; padding: 8px 12px; color: #2a2529; font-weight: 750; }
+    .manual-body { max-height: calc(min(86vh, 820px) - 78px); overflow-y: auto; padding: 22px; }
+    .manual-intro {
+      border-left: 4px solid var(--green); background: var(--green-soft); padding: 14px 16px;
+    }
+    .manual-intro p { margin: 0; color: #315a45; font-size: 13px; line-height: 1.65; }
+    .manual-quick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 18px 0; }
+    .manual-quick div { border: 1px solid var(--line); background: #fffaf2; padding: 12px; }
+    .manual-quick b { display: block; margin-bottom: 5px; color: var(--red); font-size: 11px; }
+    .manual-quick span { font-size: 13px; font-weight: 750; }
+    .manual-section { border: 1px solid var(--line); background: #fffaf2; margin-top: 10px; }
+    .manual-section summary { cursor: pointer; padding: 14px 16px; font-weight: 800; }
+    .manual-section[open] summary { border-bottom: 1px solid var(--line-soft); color: var(--red); }
+    .manual-section-content { padding: 14px 18px 17px; color: #5f554c; font-size: 13px; line-height: 1.75; }
+    .manual-section-content ol, .manual-section-content ul { margin: 0; padding-left: 22px; }
+    .manual-section-content li + li { margin-top: 5px; }
+    .manual-legend { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .manual-print-note { margin: 16px 0 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
     @media (max-width: 980px) {
       .top-grid, .control-grid { grid-template-columns: 1fr; }
-      .setup-grid { grid-template-columns: 1fr; }
       .phase-card { align-items: stretch; }
       .phase-card .button.primary { align-self: end; }
     }
@@ -204,6 +243,10 @@
       .day-grid, .stats { grid-template-columns: 1fr; }
       .day-item { min-height: 0; }
       .result-head { align-items: start; flex-direction: column; }
+      .manual-open { padding: 8px 10px; font-size: 12px; }
+      .manual-dialog-head { align-items: start; }
+      .manual-dialog-head h2 { font-size: 18px; }
+      .manual-quick { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -215,17 +258,107 @@
         <p class="kicker">《風平浪靜下的暗潮湧動》</p>
         <h1>教師遊戲管理台</h1>
       </div>
+      <button class="manual-open" id="manualOpenButton" type="button">查看使用手冊</button>
     </div>
   </header>
+
+  <dialog class="manual-dialog" id="manualDialog" aria-labelledby="manualDialogTitle">
+    <div class="manual-dialog-head">
+      <div>
+        <p>教師端操作說明</p>
+        <h2 id="manualDialogTitle">《風平浪靜下的暗潮湧動》使用手冊</h2>
+      </div>
+      <button class="manual-close" id="manualCloseButton" type="button">關閉</button>
+    </div>
+    <div class="manual-body">
+      <div class="manual-intro">
+        <p>依實際帶領順序操作：設定人數、建立名冊、進行控場、更新玩家資料，最後由系統自動結算。</p>
+      </div>
+
+      <div class="manual-quick" aria-label="快速操作流程">
+        <div><b>01</b><span>輸入人數</span></div>
+        <div><b>02</b><span>產生名冊</span></div>
+        <div><b>03</b><span>開始控場</span></div>
+        <div><b>04</b><span>更新狀態</span></div>
+        <div><b>05</b><span>查看結算</span></div>
+      </div>
+
+      <details class="manual-section" open>
+        <summary>一、開局人數設定</summary>
+        <div class="manual-section-content">
+          <ol>
+            <li>在「實際出席人數」輸入當天參與活動的學生總數；建議遊玩人數為12～36人。</li>
+            <li>按下「套用人數並產生角色」，確認後由系統配置單人及雙人角色席位。</li>
+            <li>重新產生角色會清除目前名冊與遊戲進度，請在正式開局前完成。</li>
+          </ol>
+        </div>
+      </details>
+
+      <details class="manual-section">
+        <summary>二、玩家管理</summary>
+        <div class="manual-section-content">
+          <ul>
+            <li>姓名：點選姓名欄輸入；雙人席位可以填寫兩位學生。</li>
+            <li>金幣：使用「－／＋」調整角色席位目前持有金幣。</li>
+            <li>狀態：可切換為「場內」、「審訊室」或「失去行動資格」。</li>
+            <li>持有物：記錄禁書小卡、赤化標記及線民身分。</li>
+          </ul>
+          <div class="manual-legend" aria-label="陣營顏色圖例">
+            <span class="badge faction-badge" data-faction="政府">政府</span>
+            <span class="badge faction-badge" data-faction="讀書會">讀書會</span>
+            <span class="badge faction-badge" data-faction="中立">中立</span>
+            <span class="badge faction-badge" data-faction="社會民眾">社會民眾</span>
+            <span class="badge faction-badge" data-faction="共產陣營">共產陣營</span>
+          </div>
+        </div>
+      </details>
+
+      <details class="manual-section">
+        <summary>三、控場總覽</summary>
+        <div class="manual-section-content">
+          <ul>
+            <li>先確認目前週期與白天／黑夜階段，再發布本階段指令。</li>
+            <li>播放鍵可開始或暫停倒數；重設鍵會回到本階段預設時間。</li>
+            <li>依主持人流程完成行動，並查看席位、審訊室、檢舉信及金幣統計。</li>
+            <li>確認資料更新完成後，再按「推進下一階段」。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="manual-section">
+        <summary>四、白天與黑夜流程</summary>
+        <div class="manual-section-content">
+          <p><strong>白天：</strong>啟動倒數、開放交涉與交換，並即時更新檢舉信、抗議、金幣及持有物。</p>
+          <p><strong>黑夜：</strong>依黑夜清單完成角色行動、發放固定收入、處理審訊與角色狀態，再進入下一週期。</p>
+        </div>
+      </details>
+
+      <details class="manual-section">
+        <summary>五、最終結算</summary>
+        <div class="manual-section-content">
+          <ul>
+            <li>結算前確認玩家狀態、禁書小卡、赤化標記、線民身分與抗議次數。</li>
+            <li>系統會自動判定政府、讀書會及共產陣營是否達成勝利條件。</li>
+            <li>達成條件的陣營會顯示綠色文字，也可能同時出現多個勝方。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="manual-section">
+        <summary>六、資料保存</summary>
+        <div class="manual-section-content">
+          <ul>
+            <li>遊戲資料保存在目前使用的電腦與瀏覽器中，更換裝置不會自動移轉。</li>
+          </ul>
+        </div>
+      </details>
+      <p class="manual-print-note">上課前建議先完成名冊、初始金幣與持有物確認，再開始第一週期。</p>
+    </div>
+  </dialog>
 
   <main class="shell">
     <section class="card setup-card">
       <div class="setup-grid">
-        <div>
-          <p class="eyebrow">開局人數設定</p>
-          <h3>依本日出席人數建立角色名冊</h3>
-          <p class="setup-note">家長與中立學生維持一對一；多出的學生優先加入領袖、警察、國大代表與讀書會共同決策。</p>
-        </div>
         <div class="setup-controls">
           <label class="field-label">實際出席人數
             <input class="class-input" id="classSizeInput" type="number" min="8" max="40" value="30" inputmode="numeric">
@@ -341,7 +474,7 @@
     (() => {
       "use strict";
       const STORAGE_KEY = "silent-society-standalone-v2";
-      const statuses = ["場內", "審訊室", "釋放", "失去行動資格"];
+      const statuses = ["場內", "審訊室", "失去行動資格"];
       const trackedItems = ["禁書小卡", "赤化標記", "線民"];
       const nightTasks = [
         "領袖向國大代表與警察發放薪資",
@@ -413,7 +546,13 @@
       function loadState() {
         try {
           const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-          return saved && Array.isArray(saved.players) ? {...defaultState(), ...saved, running:false} : defaultState();
+          if (!saved || !Array.isArray(saved.players)) return defaultState();
+          const loaded = {...defaultState(), ...saved, running:false};
+          loaded.players = loaded.players.map(player => ({
+            ...player,
+            status: player.status === "釋放" ? "場內" : player.status
+          }));
+          return loaded;
         } catch (_) { return defaultState(); }
       }
       function saveState() {
@@ -532,7 +671,7 @@
           const familyLabel = player.family ? `・${escapeHtml(player.family)}` : "";
           return `<tr class="${player.status === "失去行動資格" ? "inactive" : ""}">
             <td><strong>${escapeHtml(player.seatLabel)}</strong><div class="role">${player.members.length === 2 ? "2人共同決策" : "單人角色"}${familyLabel}</div><div class="member-inputs">${members}</div></td>
-            <td><span class="badge">${escapeHtml(player.faction)}</span></td>
+            <td><span class="badge faction-badge" data-faction="${escapeHtml(player.faction)}">${escapeHtml(player.faction)}</span></td>
             <td><div class="coin-controls"><button class="mini" data-coin="${player.id}" data-delta="-1" aria-label="${escapeHtml(player.seatLabel)}減少一枚金幣">−</button><span class="coin-value">${player.coins}</span><button class="mini" data-coin="${player.id}" data-delta="1" aria-label="${escapeHtml(player.seatLabel)}增加一枚金幣">＋</button></div></td>
             <td><div class="status-row">${statuses.map(status => `<button class="pill ${player.status === status ? "active" : ""}" data-status="${status}" data-player="${player.id}">${status}</button>`).join("")}</div></td>
             <td><div class="stock">${stock}</div><div class="item-row">${trackedItems.map(item => `<button class="item-toggle ${player.items.includes(item) ? "active" : ""}" data-item="${item}" data-player="${player.id}">${player.items.includes(item) ? "✓" : "＋"} ${item}</button>`).join("")}</div></td>
@@ -602,6 +741,12 @@
         document.querySelectorAll(".panel").forEach(panel => panel.classList.toggle("active", panel.id === "panel-" + name));
       }
       document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
+      const manualDialog = document.getElementById("manualDialog");
+      document.getElementById("manualOpenButton").addEventListener("click", () => manualDialog.showModal());
+      document.getElementById("manualCloseButton").addEventListener("click", () => manualDialog.close());
+      manualDialog.addEventListener("click", event => {
+        if (event.target === manualDialog) manualDialog.close();
+      });
       const classSizeInput = document.getElementById("classSizeInput");
       classSizeInput.value = state.classSize || actualParticipantCount();
       renderRosterPreview(classSizeInput.value);
