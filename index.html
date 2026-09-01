@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>教師劇本殺遊戲管理系統</title>
+  <meta name="description" content="《無聲的社會》課堂劇本殺教師控場、計時、玩家與結算管理工具">
+  <style>
+    :root {
+      --paper: #f2ede3;
+      --card: #fbf7ef;
+      --ink: #231f1c;
+      --muted: #766a5d;
+      --line: #c9beac;
+      --line-soft: #e0d6c8;
+      --red: #8c3f35;
+      --red-soft: #f4e5df;
+      --gold: #aa6a24;
+      --green: #18794e;
+      --green-soft: #e8f5ed;
+      --shadow: 0 10px 28px rgba(55, 43, 32, .055);
+    }
+    * { box-sizing: border-box; }
+    html { color-scheme: light; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      background-image:
+        radial-gradient(circle at 20% 0%, rgba(140,63,53,.06), transparent 28%),
+        linear-gradient(rgba(79,67,52,.025) 1px, transparent 1px);
+      background-size: auto, 100% 26px;
+      color: var(--ink);
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", Arial, sans-serif;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid rgba(140,63,53,.25);
+      outline-offset: 2px;
+    }
+    .header {
+      border-bottom: 1px solid var(--line);
+      background: #211e22;
+      color: #f7f0e3;
+    }
+    .header-inner, .shell { width: min(1480px, calc(100% - 32px)); margin: 0 auto; }
+    .header-inner { display: flex; align-items: center; gap: 16px; padding: 16px 0; }
+    .stamp {
+      display: grid; place-items: center; width: 46px; height: 46px;
+      border: 2px solid #c97565; color: #e89c8c; font-size: 10px;
+      font-weight: 800; letter-spacing: .14em; transform: rotate(-4deg);
+    }
+    .kicker { margin: 0 0 3px; color: #cbbfae; font-size: 12px; letter-spacing: .2em; }
+    h1 { margin: 0; font-size: clamp(19px, 3vw, 25px); }
+    .shell { padding: 26px 0 40px; }
+    .card {
+      border: 1px solid var(--line); background: rgba(251,247,239,.95);
+      box-shadow: inset 0 1px rgba(255,255,255,.7), var(--shadow);
+    }
+    .top-grid { display: grid; grid-template-columns: 1fr 320px; gap: 12px; margin-bottom: 20px; }
+    .phase-card { display: flex; justify-content: space-between; align-items: end; gap: 24px; padding: 24px; }
+    .badges, .inline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .badge {
+      display: inline-flex; align-items: center; width: fit-content; border: 1px solid var(--line);
+      border-radius: 999px; background: #f8f3e9; padding: 5px 11px; color: #554b40;
+      font-size: 12px; line-height: 1;
+    }
+    .badge.red { border-color: transparent; background: var(--red); color: #fff8ea; font-weight: 700; }
+    .badge.win { border-color: #96cfaf; background: var(--green-soft); color: var(--green); font-weight: 750; }
+    .phase-title { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+    .phase-icon { font-size: 28px; }
+    .eyebrow { margin: 0 0 3px; color: var(--red); font-size: 11px; font-weight: 800; letter-spacing: .18em; }
+    h2, h3, h4, p { margin-top: 0; }
+    h2 { margin-bottom: 0; font-size: clamp(25px, 4vw, 34px); }
+    h3 { margin-bottom: 0; font-size: 20px; }
+    .progress-meta { display: flex; justify-content: space-between; margin: 18px 0 7px; color: var(--muted); font-size: 12px; }
+    .progress { height: 7px; overflow: hidden; border-radius: 999px; background: #d8cdbc; }
+    .progress > span { display: block; height: 100%; background: var(--red); transition: width .25s ease; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 42px; border: 1px solid var(--line); border-radius: 5px;
+      background: #f8f3e9; padding: 10px 16px; color: var(--ink);
+      font-weight: 650; transition: .15s ease;
+    }
+    .button:hover { background: #eee5d7; }
+    .button.primary { border-color: #211e22; background: #211e22; color: #fff8ea; }
+    .button.primary:hover { background: #3a333a; }
+    .button.red { border-color: var(--red); background: var(--red); color: #fff; }
+    .button.icon { width: 42px; padding: 0; font-size: 18px; }
+    .timer-card { padding: 20px; }
+    .timer-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .timer-label { margin: 0; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .12em; }
+    .timer { margin: 4px 0 0; font: 800 38px ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .timer.urgent { color: #a33d32; }
+    .timer-actions { display: flex; gap: 8px; }
+    .tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--line); }
+    .tab {
+      flex: 0 0 auto; border: 0; border-bottom: 2px solid transparent;
+      background: transparent; padding: 13px 17px; color: var(--muted);
+    }
+    .tab.active { border-bottom-color: var(--red); color: var(--ink); font-weight: 750; }
+    .panel { display: none; padding-top: 20px; }
+    .panel.active { display: block; }
+    .control-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 20px; }
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      border-bottom: 1px solid #d5cabb; padding: 18px 22px;
+    }
+    .day-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: #d5cabb; }
+    .day-item { min-height: 160px; background: var(--card); padding: 22px; }
+    .day-num { display: block; margin-bottom: 22px; color: #9a574d; font: 12px ui-monospace, monospace; }
+    .day-item h4 { margin-bottom: 8px; }
+    .day-item p { margin-bottom: 0; color: #665b50; font-size: 14px; line-height: 1.7; }
+    .night-list { padding: 10px 22px; }
+    .night-task { display: flex; align-items: flex-start; gap: 11px; border-bottom: 1px solid var(--line-soft); padding: 13px 0; }
+    .night-task:last-child { border-bottom: 0; }
+    .night-task input { width: 18px; height: 18px; accent-color: var(--red); }
+    .night-task.done span { color: #8b8175; text-decoration: line-through; }
+    .side { display: grid; gap: 18px; align-content: start; }
+    .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .stat { padding: 16px; }
+    .stat-icon { color: var(--red); font-size: 18px; }
+    .stat-label { margin: 10px 0 3px; color: var(--muted); font-size: 12px; }
+    .stat-value { margin: 0; font-size: 21px; font-weight: 800; }
+    .quick { padding: 18px; }
+    .quick .button { width: 100%; margin-top: 9px; }
+    .quick-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .quick-pair .button { padding-inline: 8px; }
+    .rule { height: 1px; margin: 16px 0; background: #d5cabb; }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; line-height: 1.65; }
+    .table-card { overflow: hidden; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background: #eee6d9; color: #665b50; text-align: left; }
+    th, td { border-bottom: 1px solid var(--line-soft); padding: 12px 14px; vertical-align: middle; }
+    tbody tr:hover { background: #f5eee3; }
+    .name-input { width: 100%; min-width: 145px; border: 0; background: transparent; padding: 4px 0; color: var(--ink); font-weight: 700; }
+    .role { margin-top: 2px; color: #8b8175; font-size: 11px; }
+    .coin-controls { display: flex; align-items: center; gap: 7px; }
+    .mini {
+      min-width: 30px; min-height: 30px; border: 1px solid var(--line); border-radius: 4px;
+      background: transparent; color: var(--ink);
+    }
+    .coin-value { width: 30px; text-align: center; font: 800 14px ui-monospace, monospace; }
+    .status-row, .item-row { display: flex; flex-wrap: wrap; gap: 5px; min-width: 255px; }
+    .pill {
+      border: 1px solid transparent; border-radius: 999px; background: transparent;
+      padding: 5px 8px; color: #8b8175; font-size: 11px;
+    }
+    .pill:hover { border-color: var(--line); }
+    .pill.active[data-status="場內"] { border-color: #a9d8bd; background: #edf8f1; color: #17633f; }
+    .pill.active[data-status="審訊室"] { border-color: #dfc274; background: #fff8df; color: #745a0d; }
+    .pill.active[data-status="釋放"] { border-color: #a9c8df; background: #eef7fc; color: #245d80; }
+    .pill.active[data-status="失去行動資格"] { border-color: #d0ccc7; background: #f1efec; color: #665f58; }
+    .stock { margin-bottom: 7px; color: #665b50; font-size: 11px; line-height: 1.5; }
+    .item-toggle {
+      border: 1px solid #d5cabb; border-radius: 4px; background: transparent;
+      padding: 4px 7px; color: #8b8175; font-size: 10px;
+    }
+    .item-toggle.active { border-color: var(--red); background: var(--red-soft); color: #7f3028; }
+    .result-card { padding: 22px; }
+    .result-head { display: flex; justify-content: space-between; align-items: end; gap: 12px; border-bottom: 1px solid #d5cabb; padding-bottom: 18px; }
+    .outcomes { display: grid; gap: 20px; margin-top: 22px; }
+    .outcome { border-left: 2px solid var(--red); padding-left: 15px; }
+    .outcome h4 { margin-bottom: 6px; }
+    .outcome p { margin-bottom: 3px; color: #665b50; font-size: 14px; line-height: 1.65; }
+    .outcome .current { color: #9a574d; font: 12px ui-monospace, monospace; }
+    .outcome.won { border-left-color: #2d9d68; color: var(--green); }
+    .outcome.won p, .outcome.won .current { color: var(--green); }
+    .win-chip { display: inline-block; margin-left: 8px; border-radius: 999px; background: var(--green-soft); padding: 3px 8px; color: var(--green); font-size: 10px; vertical-align: middle; }
+    @media (max-width: 980px) {
+      .top-grid, .control-grid { grid-template-columns: 1fr; }
+      .phase-card { align-items: stretch; }
+      .phase-card .button.primary { align-self: end; }
+    }
+    @media (max-width: 620px) {
+      .stamp { display: none; }
+      .header-inner, .shell { width: min(100% - 20px, 1480px); }
+      .shell { padding-top: 12px; }
+      .phase-card { flex-direction: column; padding: 18px; }
+      .phase-card .button.primary { width: 100%; }
+      .day-grid, .stats { grid-template-columns: 1fr; }
+      .day-item { min-height: 0; }
+      .result-head { align-items: start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="stamp" aria-hidden="true">教師密件</div>
+      <div>
+        <p class="kicker">《無聲的社會》課堂控場系統</p>
+        <h1>教師遊戲管理台</h1>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="top-grid">
+      <div class="card phase-card">
+        <div style="flex:1">
+          <div class="badges">
+            <span class="badge red" id="cycleBadge">週期 1／3</span>
+            <span class="badge">總時長約 1.5 節課</span>
+          </div>
+          <div class="phase-title">
+            <span class="phase-icon" id="phaseIcon" aria-hidden="true">☀</span>
+            <div>
+              <p class="eyebrow">目前階段</p>
+              <h2 id="phaseTitle">白天・自由交涉</h2>
+            </div>
+          </div>
+          <div class="progress-meta"><span>全局進度</span><span id="globalPercent">0%</span></div>
+          <div class="progress" aria-label="全局進度"><span id="globalBar" style="width:0%"></span></div>
+        </div>
+        <button class="button primary" id="advanceButton" type="button">推進下一階段 <span aria-hidden="true">›</span></button>
+      </div>
+
+      <div class="card timer-card">
+        <div class="timer-row">
+          <div>
+            <p class="timer-label">◷ 階段倒數</p>
+            <p class="timer" id="timerText">20:00</p>
+          </div>
+          <div class="timer-actions">
+            <button class="button red icon" id="timerToggle" type="button" aria-label="開始計時">▶</button>
+            <button class="button icon" id="timerReset" type="button" aria-label="重設本階段計時">↻</button>
+          </div>
+        </div>
+        <div class="progress" style="margin-top:15px"><span id="timerBar" style="width:100%;background:var(--gold)"></span></div>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="管理頁籤">
+      <button class="tab active" data-tab="control" type="button">控場總覽</button>
+      <button class="tab" data-tab="players" type="button">玩家管理</button>
+      <button class="tab" data-tab="closing" type="button">最終結算</button>
+    </nav>
+
+    <section class="panel active" id="panel-control">
+      <div class="control-grid">
+        <section class="card">
+          <div class="section-head">
+            <div><p class="eyebrow">主持人流程</p><h3 id="flowHeading">白天行動提示</h3></div>
+            <span class="badge" id="flowCycle">第 1 週期</span>
+          </div>
+          <div id="flowContent"></div>
+        </section>
+        <aside class="side">
+          <section class="stats">
+            <article class="card stat"><span class="stat-icon">♟</span><p class="stat-label">場上玩家</p><p class="stat-value" id="playerCount">18 人</p></article>
+            <article class="card stat"><span class="stat-icon">⚠</span><p class="stat-label">審訊室</p><p class="stat-value" id="detainedCount">0 人</p></article>
+            <article class="card stat"><span class="stat-icon">▣</span><p class="stat-label">檢舉信</p><p class="stat-value" id="reportCount">0 封</p></article>
+            <article class="card stat"><span class="stat-icon">●</span><p class="stat-label">流通金幣</p><p class="stat-value" id="coinTotal">0 枚</p></article>
+          </section>
+          <section class="card quick">
+            <p class="eyebrow">快速控場</p>
+            <button class="button" id="incomeButton" type="button">● 發放本週期固定收入</button>
+            <div class="quick-pair">
+              <button class="button" id="reportButton" type="button">＋ 檢舉信</button>
+              <button class="button" id="protestButton" type="button">＋ 抗議</button>
+            </div>
+            <div class="rule"></div>
+            <div class="inline" style="justify-content:space-between"><span class="muted small">累積抗議次數</span><strong id="protestCount">0 次</strong></div>
+            <p class="muted small" style="margin:9px 0 0">若當回合國大代表發動抗議，警察抓捕行動無效。</p>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-players">
+      <section class="card table-card">
+        <div class="section-head">
+          <div><p class="eyebrow">全員名冊</p><h3>角色、金幣與狀態</h3></div>
+          <p class="muted small" style="max-width:470px;margin:0">可修改角色名稱，並切換禁書小卡、赤化標記與線民身分；所有結果會即時重算。</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>玩家／角色</th><th>陣營</th><th>金幣</th><th>狀態</th><th>持有物</th></tr></thead>
+            <tbody id="playerRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel" id="panel-closing">
+      <section class="card result-card">
+        <div class="result-head">
+          <div><p class="eyebrow">自動判定</p><h3>最終結算面板</h3></div>
+          <span class="badge" id="winnerSummary">目前尚無陣營達成條件</span>
+        </div>
+        <div class="outcomes" id="outcomes"></div>
+        <div class="rule"></div>
+        <p class="muted small">學生依持有的禁書小卡、赤化標記或線民身分歸入對應陣營；家長再依綁定學生的結果個別判定。</p>
+        <div class="badges" id="factionStats"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+      const STORAGE_KEY = "silent-society-standalone-v1";
+      const statuses = ["場內", "審訊室", "釋放", "失去行動資格"];
+      const trackedItems = ["禁書小卡", "赤化標記", "線民"];
+      const nightTasks = [
+        "領袖向國大代表與警察發放薪資",
+        "警察查看檢舉內容，確認本回合最多 2 名目標",
+        "國大代表決定是否發動抗議",
+        "處理審訊室、保釋與釋放結果",
+        "發放下一週期固定收入並更新紀錄"
+      ];
+      const initialPlayers = [
+        [1,"蔣中正","最高領袖","政府",30,10,["檢舉信"]],
+        [2,"國大代表 A","國大代表","政府",0,0,["檢舉信"]],
+        [3,"國大代表 B","國大代表","政府",0,0,["檢舉信"]],
+        [4,"警察 A","警察","政府",0,0,["檢舉信"]],
+        [5,"警察 B","警察","政府",0,0,["檢舉信"]],
+        [6,"警察 C","警察","政府",0,0,["檢舉信"]],
+        [7,"讀書會領導者 A","讀書會領導者","讀書會",5,2,["禁書小卡","檢舉信"]],
+        [8,"讀書會領導者 B","讀書會領導者","讀書會",5,2,["禁書小卡","檢舉信"]],
+        [9,"學生 A","學生","中立",0,0,["檢舉信"]],
+        [10,"學生 B","學生","中立",0,0,["檢舉信"]],
+        [11,"學生 C","學生","中立",0,0,["檢舉信"]],
+        [12,"學生 D","學生","中立",0,0,["檢舉信"]],
+        [13,"學生 E","學生","中立",0,0,["檢舉信"]],
+        [14,"家長 A","家長","社會民眾",15,5,["檢舉信"]],
+        [15,"家長 B","家長","社會民眾",15,5,["檢舉信"]],
+        [16,"家長 C","家長","社會民眾",15,5,["檢舉信"]],
+        [17,"地下黨員 A","地下共產黨員","共產陣營",5,2,["赤化標記 ×3","檢舉信"]],
+        [18,"地下黨員 B","地下共產黨員","共產陣營",5,2,["赤化標記 ×3","檢舉信"]]
+      ].map(([id,name,role,faction,coins,income,items]) => ({id,name,role,faction,coins,income,status:"場內",items}));
+
+      const defaultState = () => ({
+        players: JSON.parse(JSON.stringify(initialPlayers)),
+        cycle: 1, phase: "白天", seconds: 1200, running: false,
+        protests: 0, reports: 0, tasks: nightTasks.map(() => false)
+      });
+      let state = loadState();
+      let timerId = null;
+
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          return saved && Array.isArray(saved.players) ? {...defaultState(), ...saved, running:false} : defaultState();
+        } catch (_) { return defaultState(); }
+      }
+      function saveState() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({...state, running:false})); } catch (_) {}
+      }
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
+      }
+      function formatTime(value) {
+        return String(Math.floor(value/60)).padStart(2,"0") + ":" + String(value%60).padStart(2,"0");
+      }
+      function currentDuration() { return state.phase === "白天" ? 1200 : 600; }
+      function isInactive(player) { return ["審訊室","失去行動資格"].includes(player.status); }
+      function playerById(id) { return state.players.find(player => player.id === Number(id)); }
+
+      function calculateResults() {
+        const threatsControlled = state.players.filter(p => ["讀書會領導者","地下共產黨員"].includes(p.role) && isInactive(p)).length;
+        const activeLeaders = state.players.filter(p => p.role === "讀書會領導者" && !isInactive(p)).length;
+        const enlightenedStudents = state.players.filter(p => p.role === "學生" && p.items.includes("禁書小卡") && !p.items.includes("赤化標記")).length;
+        const radicalizedPlayers = state.players.filter(p => p.faction === "共產陣營" || p.items.includes("赤化標記")).length;
+        const activeUnderground = state.players.filter(p => p.role === "地下共產黨員" && !isInactive(p)).length;
+        return {
+          threatsControlled, activeLeaders, enlightenedStudents, radicalizedPlayers, activeUnderground,
+          governmentWon: threatsControlled >= 3 && state.protests < 2,
+          bookClubWon: enlightenedStudents >= 2 && activeLeaders > 0,
+          communistWon: radicalizedPlayers >= 5 && activeUnderground > 0
+        };
+      }
+
+      function render() {
+        const duration = currentDuration();
+        const progress = (((state.cycle - 1) * 2 + (state.phase === "黑夜" ? 1 : 0)) / 6) * 100;
+        document.getElementById("cycleBadge").textContent = `週期 ${state.cycle}／3`;
+        document.getElementById("flowCycle").textContent = `第 ${state.cycle} 週期`;
+        document.getElementById("phaseIcon").textContent = state.phase === "白天" ? "☀" : "☾";
+        document.getElementById("phaseTitle").textContent = state.phase + "・" + (state.phase === "白天" ? "自由交涉" : "結算與行動");
+        document.getElementById("globalPercent").textContent = Math.round(progress) + "%";
+        document.getElementById("globalBar").style.width = progress + "%";
+        document.getElementById("advanceButton").innerHTML = state.cycle === 3 && state.phase === "黑夜" ? "查看最終結算 <span>›</span>" : "推進下一階段 <span>›</span>";
+        const timerText = document.getElementById("timerText");
+        timerText.textContent = formatTime(state.seconds);
+        timerText.classList.toggle("urgent", state.seconds <= 60);
+        document.getElementById("timerBar").style.width = Math.max(0, Math.min(100, state.seconds / duration * 100)) + "%";
+        document.getElementById("timerToggle").textContent = state.running ? "Ⅱ" : "▶";
+        document.getElementById("timerToggle").setAttribute("aria-label", state.running ? "暫停計時" : "開始計時");
+        renderFlow();
+        renderStats();
+        renderPlayers();
+        renderResults();
+        saveState();
+      }
+
+      function renderFlow() {
+        const root = document.getElementById("flowContent");
+        document.getElementById("flowHeading").textContent = state.phase === "白天" ? "白天行動提示" : "黑夜結算清單";
+        if (state.phase === "白天") {
+          const items = [
+            ["自由交涉","允許走動、私聊、交換金幣與情報。"],
+            ["陣營行動","讀書會試探學生；地下黨員發放標記；政府蒐集情報。"],
+            ["檢舉箱","提醒投遞過程保密；新增檢舉信每張需支付 2 枚金幣。"],
+            ["教師觀察","留意學生的道德選擇、資訊判斷與權力互動。"]
+          ];
+          root.innerHTML = '<div class="day-grid">' + items.map((item,index) =>
+            `<article class="day-item"><span class="day-num">0${index+1}</span><h4>${item[0]}</h4><p>${item[1]}</p></article>`
+          ).join("") + "</div>";
+        } else {
+          root.innerHTML = '<div class="night-list">' + nightTasks.map((task,index) =>
+            `<label class="night-task ${state.tasks[index] ? "done" : ""}"><input type="checkbox" data-task="${index}" ${state.tasks[index] ? "checked" : ""}><span>${task}</span></label>`
+          ).join("") + "</div>";
+          root.querySelectorAll("[data-task]").forEach(input => input.addEventListener("change", event => {
+            state.tasks[Number(event.target.dataset.task)] = event.target.checked;
+            render();
+          }));
+        }
+      }
+
+      function renderStats() {
+        document.getElementById("playerCount").textContent = state.players.length + " 人";
+        document.getElementById("detainedCount").textContent = state.players.filter(p => p.status === "審訊室").length + " 人";
+        document.getElementById("reportCount").textContent = state.reports + " 封";
+        document.getElementById("coinTotal").textContent = state.players.reduce((sum,p) => sum + p.coins,0) + " 枚";
+        const protest = document.getElementById("protestCount");
+        protest.textContent = state.protests + " 次";
+        protest.style.color = state.protests >= 2 ? "#a33d32" : "";
+      }
+
+      function renderPlayers() {
+        document.getElementById("playerRows").innerHTML = state.players.map(player => {
+          const stock = player.items.filter(item => !trackedItems.includes(item)).map(escapeHtml).join("、") || "—";
+          return `<tr>
+            <td><input class="name-input" value="${escapeHtml(player.name)}" aria-label="${escapeHtml(player.role)}名稱" data-name="${player.id}"><div class="role">${escapeHtml(player.role)}</div></td>
+            <td><span class="badge">${escapeHtml(player.faction)}</span></td>
+            <td><div class="coin-controls"><button class="mini" data-coin="${player.id}" data-delta="-1" aria-label="${escapeHtml(player.name)}減少一枚金幣">−</button><span class="coin-value">${player.coins}</span><button class="mini" data-coin="${player.id}" data-delta="1" aria-label="${escapeHtml(player.name)}增加一枚金幣">＋</button></div></td>
+            <td><div class="status-row">${statuses.map(status => `<button class="pill ${player.status === status ? "active" : ""}" data-status="${status}" data-player="${player.id}">${status}</button>`).join("")}</div></td>
+            <td><div class="stock">${stock}</div><div class="item-row">${trackedItems.map(item => `<button class="item-toggle ${player.items.includes(item) ? "active" : ""}" data-item="${item}" data-player="${player.id}">${player.items.includes(item) ? "✓" : "＋"} ${item}</button>`).join("")}</div></td>
+          </tr>`;
+        }).join("");
+        document.querySelectorAll("[data-name]").forEach(input => input.addEventListener("change", event => {
+          playerById(event.target.dataset.name).name = event.target.value.trim() || playerById(event.target.dataset.name).role;
+          render();
+        }));
+        document.querySelectorAll("[data-coin]").forEach(button => button.addEventListener("click", event => {
+          const player = playerById(event.currentTarget.dataset.coin);
+          player.coins = Math.max(0, player.coins + Number(event.currentTarget.dataset.delta));
+          render();
+        }));
+        document.querySelectorAll("[data-status]").forEach(button => button.addEventListener("click", event => {
+          playerById(event.currentTarget.dataset.player).status = event.currentTarget.dataset.status;
+          render();
+        }));
+        document.querySelectorAll("[data-item]").forEach(button => button.addEventListener("click", event => {
+          const player = playerById(event.currentTarget.dataset.player);
+          const item = event.currentTarget.dataset.item;
+          player.items = player.items.includes(item) ? player.items.filter(value => value !== item) : [...player.items,item];
+          render();
+        }));
+      }
+
+      function renderResults() {
+        const result = calculateResults();
+        const winners = [
+          result.governmentWon && "政府陣營",
+          result.bookClubWon && "讀書會陣營",
+          result.communistWon && "共產陣營"
+        ].filter(Boolean);
+        const summary = document.getElementById("winnerSummary");
+        summary.textContent = winners.length ? "目前勝方：" + winners.join("、") : "目前尚無陣營達成條件";
+        summary.classList.toggle("win", winners.length > 0);
+        const outcomes = [
+          {
+            won: result.governmentWon, title: "政府陣營",
+            detail: "審訊室內至少 3 名讀書會領導者或地下黨員，且抗議少於 2 次。",
+            current: `目前符合目標 ${result.threatsControlled} 人／抗議 ${state.protests} 次`
+          },
+          {
+            won: result.bookClubWon, title: "讀書會陣營",
+            detail: "至少 2 名學生持有禁書小卡且未持有赤化標記；至少 1 名領導者仍具行動資格。",
+            current: `符合條件學生 ${result.enlightenedStudents} 人／可行動領導者 ${result.activeLeaders} 人`
+          },
+          {
+            won: result.communistWon, title: "共產陣營",
+            detail: "持有赤化標記者與地下黨員合計達 5 人；至少 1 名地下黨員仍具行動資格。",
+            current: `陣營人數 ${result.radicalizedPlayers} 人／可行動地下黨員 ${result.activeUnderground} 人`
+          }
+        ];
+        document.getElementById("outcomes").innerHTML = outcomes.map(item =>
+          `<article class="outcome ${item.won ? "won" : ""}"><h4>${item.title}${item.won ? '<span class="win-chip">達成勝利條件</span>' : ""}</h4><p>${item.detail}</p><p class="current">${item.current}</p></article>`
+        ).join("");
+        const factions = ["政府","讀書會","中立","社會民眾","共產陣營"];
+        document.getElementById("factionStats").innerHTML = factions.map(faction =>
+          `<span class="badge">${faction} ${state.players.filter(player => player.faction === faction).length}</span>`
+        ).join("");
+      }
+
+      function showTab(name) {
+        document.querySelectorAll(".tab").forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
+        document.querySelectorAll(".panel").forEach(panel => panel.classList.toggle("active", panel.id === "panel-" + name));
+      }
+      document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
+      document.getElementById("advanceButton").addEventListener("click", () => {
+        if (state.cycle === 3 && state.phase === "黑夜") { showTab("closing"); return; }
+        state.running = false;
+        state.tasks = nightTasks.map(() => false);
+        if (state.phase === "白天") { state.phase = "黑夜"; state.seconds = 600; }
+        else { state.cycle += 1; state.phase = "白天"; state.seconds = 1200; }
+        syncTimer();
+        render();
+      });
+      document.getElementById("timerToggle").addEventListener("click", () => {
+        state.running = !state.running;
+        syncTimer();
+        render();
+      });
+      document.getElementById("timerReset").addEventListener("click", () => {
+        state.running = false; state.seconds = currentDuration(); syncTimer(); render();
+      });
+      document.getElementById("incomeButton").addEventListener("click", () => {
+        state.players.forEach(player => player.coins += player.income); render();
+      });
+      document.getElementById("reportButton").addEventListener("click", () => { state.reports += 1; render(); });
+      document.getElementById("protestButton").addEventListener("click", () => { state.protests += 1; render(); });
+
+      function syncTimer() {
+        if (timerId) { clearInterval(timerId); timerId = null; }
+        if (state.running) timerId = setInterval(() => {
+          if (state.seconds > 0) state.seconds -= 1;
+          if (state.seconds <= 0) { state.running = false; syncTimer(); }
+          render();
+        }, 1000);
+      }
+      syncTimer();
+      render();
+    })();
+  </script>
+</body>
+</html>
